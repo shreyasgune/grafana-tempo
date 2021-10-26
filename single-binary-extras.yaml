@@ -1,21 +1,37 @@
-apiVersion: networking.k8s.io/v1
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: ingress
+#   namespace: sgune-tempo
+#   annotations:
+#     ingress.kubernetes.io/ssl-redirect: "false"
+# spec:
+#   rules:
+#   - http:
+#       paths:
+#       - path: /
+#         pathType: Prefix
+#         backend:
+#           service:
+#             name: grafana
+#             port:
+#               number: 80
+---
+apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
-  name: ingress
-  namespace: default
   annotations:
     ingress.kubernetes.io/ssl-redirect: "false"
+  name: ingress
+  namespace: default
 spec:
   rules:
   - http:
       paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: grafana
-            port:
-              number: 80
+      - backend:
+          serviceName: grafana
+          servicePort: 80
+        path: /              
 ---
 apiVersion: v1
 data:
@@ -653,13 +669,13 @@ data:
 kind: ConfigMap
 metadata:
   name: synthetic-load-generator
-  namespace: default
+  namespace: sgune-tempo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: synthetic-load-generator
-  namespace: default
+  namespace: sgune-tempo
 spec:
   minReadySeconds: 10
   replicas: 1
@@ -681,7 +697,7 @@ spec:
         - name: TOPOLOGY_FILE
           value: /conf/load-generator.json
         image: omnition/synthetic-load-generator:1.0.25
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         name: synthetic-load-gen
         volumeMounts:
         - mountPath: /conf

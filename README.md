@@ -7,20 +7,28 @@ POC for grafana tempo
 ## Initial Setup
 ```
 helm repo add grafana https://grafana.github.io/helm-charts
+```
 
-helm upgrade --install tempo grafana/tempo
+## Install Tempo
+```
+
+helm upgrade --dry-run --namespace sgune-tempo --values tempo_values.yaml --install  tempo grafana/tempo
+
+helm upgrade --namespace sgune-tempo --values tempo_values.yaml --install  tempo grafana/tempo
+
+
 ```
 
 ## Microservices Track
 ``` 
-helm upgrade -f microservices-grafana-values.yaml --install grafana grafana/grafana
+helm upgrade --namespace sgune-tempo -f microservices-grafana-values.yaml --namespace sgune-tempo --install grafana grafana/grafana
 
 kubectl create -f microservices-extras.yaml 
 ```
 
 ## Single Binary Track
 ```
-helm upgrade -f single-binary-grafana-values.yaml --install grafana grafana/grafana
+helm upgrade --namespace sgune-tempo -f single-binary-grafana-values.yaml  --install grafana grafana/grafana
 
 kubectl create -f single-binary-extras.yaml --validate=false
 
