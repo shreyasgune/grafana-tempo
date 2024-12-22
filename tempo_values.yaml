@@ -1,0 +1,169 @@
+# -- Overrides the chart's name
+nameOverride: ""
+
+# -- Overrides the chart's computed fullname
+fullnameOverride: ""
+
+replicas: 1
+tempo:
+  repository: grafana/tempo
+  tag: latest
+  pullPolicy: Always
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - myRegistryKeySecretName
+
+  updateStrategy: RollingUpdate
+  resources: {}
+  #  requests:
+  #    cpu: 1000m
+  #    memory: 4Gi
+  #  limits:
+  #    cpu: 2000m
+  #    memory: 6Gi
+
+  memBallastSizeMbs: 1024
+  authEnabled: false
+  compactor:
+    compaction:
+      compaction_window: 1h              # blocks in this time window will be compacted together
+      max_block_bytes: 100_000_000        # maximum size of compacted blocks
+      block_retention: 1h
+      compacted_block_retention: 10m
+      flush_size_bytes: 5242880
+  
+  distributor:
+    receivers:                           # this configuration will listen on all ports and protocols that tempo is capable of.
+      jaeger:                            # the receives all come from the OpenTelemetry collector.  more configuration information can
+        protocols:                       # be found there: https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver
+          thrift_http:                   #
+          grpc:                          # for a production deployment you should only enable the receivers you need!
+          thrift_binary:
+          thrift_compact:
+      zipkin:
+      otlp:
+        protocols:
+          http:
+          grpc:
+    opencensus:
+
+  ingester:
+    trace_idle_period: 10s               # the length of time after a trace has not received spans to consider it complete and flush it
+    max_block_bytes: 1_000_000           # cut the head block when it hits this size or ...
+    max_block_duration: 5m               #   this much time passes
+
+  server:
+    httpListenPort: 3200
+
+  storage:
+    trace:
+      backend: s3                        # backend configuration to use
+      block:
+        bloom_filter_false_positive: .05 # bloom filter false positive rate.  lower values create larger filters but fewer false positives
+        index_downsample_bytes: 1000     # number of bytes per index record
+        encoding: gzip                   # block encoding/compression.  options: none, gzip, lz4-64k, lz4-256k, lz4-1M, lz4, snappy, zstd, s2
+      wal:
+        path: /tmp/tempo/wal             # where to store the the wal locally
+        encoding: gzip                 # wal encoding/compression.  options: none, gzip, lz4-64k, lz4-256k, lz4-1M, lz4, snappy, zstd, s2
+      s3:
+        # bucket: tempo                    # how to store data in s3
+        # endpoint: minio:9000
+        # access_key: tempo
+        # secret_key: supersecret
+        # insecure: true
+        bucket: sgune-tempo-bucket                   
+        endpoint: <redacted>
+        region: <redacted>
+        access_key: <redacted>
+        secret_key: <redacted>
+        insecure: false
+      pool:
+        max_workers: 100                 # worker pool determines the number of parallel requests to the object store backend
+        queue_depth: 10000
+    # trace:
+    #   backend: local
+    #   local:
+    #     path: /var/tempo/traces
+    #   wal:
+    #     path: /var/tempo/wal
+  # this configuration will listen on all ports and protocols that tempo is capable of.
+  # the receives all come from the OpenTelemetry collector.  more configuration information can
+  # be found there: https://github.com/open-telemetry/opentelemetry-collector/tree/master/receiver
+  ## Additional container arguments
+  extraArgs: {}
+  # -- Environment variables to add
+  extraEnv: []
+  # -- Volume mounts to add
+  extraVolumeMounts: []
+  # - name: extra-volume
+  #   mountPath: /mnt/volume
+  #   readOnly: true
+  #   existingClaim: volume-claim
+
+tempoQuery:
+  repository: grafana/tempo-query
+  tag: latest
+  pullPolicy: IfNotPresent
+  ## Optionally specify an array of imagePullSecrets.
+  ## Secrets must be manually created in the namespace.
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
+  ##
+  # pullSecrets:
+  #   - myRegistryKeySecretName
+  ## Additional container arguments
+  extraArgs: {}
+  # -- Environment variables to add
+  extraEnv: []
+  # -- Volume mounts to add
+  extraVolumeMounts: []
+  # - name: extra-volume
+  #   mountPath: /mnt/volume
+  #   readOnly: true
+  #   existingClaim: volume-claim
+
+serviceAccount:
+  # -- Specifies whether a ServiceAccount should be created
+  create: true
+  # -- The name of the ServiceAccount to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: null
+  # -- Image pull secrets for the service account
+  imagePullSecrets: []
+  # -- Annotations for the service account
+  annotations: {}
+
+service:
+  type: ClusterIP
+  annotations: {}
+  labels: {}
+
+persistence:
+  enabled: false
+  # storageClassName: local-path
+  accessModes:
+    - ReadWriteOnce
+  size: 10Gi
+
+## Pod Annotations
+podAnnotations: {}
+
+# -- Volumes to add
+extraVolumes: []
+
+## Node labels for pod assignment
+## ref: https://kubernetes.io/docs/user-guide/node-selection/
+#
+nodeSelector: {}
+
+## Tolerations for pod assignment
+## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
+##
+tolerations: []
+
+## Affinity for pod assignment
+## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
+##
+affinity: {}
